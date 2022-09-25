@@ -1,0 +1,116 @@
+:root {
+  --primary-font: "Raleway", sans-serif;
+  --secondary-font: "Oswald", sans-serif;
+  --font-large: 200%;
+  --font-medium: 150%;
+  --font-regular: 100%;
+}
+
+.header {
+  display: block;
+  width: 100%;
+  padding: 30px 15px;
+  margin-bottom: 50px;
+
+  background-image: linear-gradient(
+    to bottom right,
+    rgb(80, 84, 199),
+    rgb(152, 159, 199)
+  );
+}
+
+.header h1 {
+  font-family: var(--secondary-font);
+  font-size: var(--font-large);
+}
+
+.content {
+  padding: 0 30px;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-history {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 30%;
+}
+
+.search-form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.search-form h2 {
+  font-family: var(--secondary-font);
+  font-size: var(--font-medium);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.search-form #userInput {
+  width: 100%;
+  height: 40px;
+  margin-bottom: 20px;
+  font-family: var(--primary-font);
+  font-size: var(--font-regular);
+}
+
+.search-form #search-button {
+  width: 100%;
+  height: 40px;
+  background-color: rgb(53, 35, 193);
+  border: none;
+  border-radius: 10px;
+  color: white;
+
+  cursor: pointer;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: 100%;
+}
+
+.weather-display {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 70%;
+}
+
+.weather-display .today {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: flex-start;
+}
+
+.weather-display .future {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.weather-display .card {
+  padding: 20px 10px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}

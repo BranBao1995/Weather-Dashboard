@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@200&family=Raleway:wght@300&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./assets/css/reset.css" />
+    <link rel="stylesheet" href="./assets/css/style.css" />
+    <title>Weather Dashboard</title>
+  </head>
+  <body>
+    <header class="header">
+      <h1>Anytime Weather Pro</h1>
+    </header>
+
+    <section class="content">
+      <div class="search-history">
+        <form class="search-form">
+          <h2>Search for a city:</h2>
+          <input type="text" id="userInput" />
+          <button id="search-button">Search</button>
+        </form>
+        <ul class="history-list"></ul>
+      </div>
+
+      <div class="weather-display">
+        <div class="today"></div>
+        <div class="future"></div>
+      </div>
+    </section>
+
+    <script src="./assets/js/script.js"></script>
+  </body>
+</html>
