@@ -11,34 +11,59 @@ const apiKey = "1ff8e1adf1658293d1d256155fe06eec";
 
 const userInput = document.querySelector("#userInput");
 const searchButton = document.querySelector("#search-button");
+const clearHistoryButton = document.querySelector(".clear-button");
 const todaysWeather = document.querySelector(".today");
 const futureWeather = document.querySelector(".future");
+const searchHistoryList = document.querySelector(".history-list");
 
-searchButton.addEventListener("click", function (event) {
-  event.preventDefault();
-  let cityName = userInput.value.trim("");
-  let convertNameToCoordinatesURL =
-    "http://api.openweathermap.org/geo/1.0/direct?q=" +
-    cityName +
-    "&appid=1ff8e1adf1658293d1d256155fe06eec";
+let searchHistory = [];
 
-  let latitude;
-  let longitude;
+function init() {
+  if (localStorage.getItem("searchHistory") !== null) {
+    searchHistory = JSON.parse(localStorage.getItem("searchHistory"));
+  } else {
+    searchHistory = [];
+  }
 
-  fetch(convertNameToCoordinatesURL)
-    .then(function (response) {
-      return response.json();
-    })
-    .then(function (data) {
-      latitude = data[0].lat.toFixed(2).toString();
-      longitude = data[0].lon.toFixed(2).toString();
-      fetchWeather(latitude, longitude);
-    });
+  searchButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    let str = userInput.value.trim("");
+    let cityName = str.charAt(0).toUpperCase() + str.slice(1);
+    let convertNameToCoordinatesURL =
+      "http://api.openweathermap.org/geo/1.0/direct?q=" +
+      cityName +
+      "&appid=1ff8e1adf1658293d1d256155fe06eec";
 
-  userInput.value = "";
-});
+    let latitude;
+    let longitude;
 
-function fetchWeather(latitude, longitude) {
+    fetch(convertNameToCoordinatesURL)
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        latitude = data[0].lat.toFixed(2).toString();
+        longitude = data[0].lon.toFixed(2).toString();
+        addSearchToHistory(cityName);
+        fetchWeather(latitude, longitude, cityName);
+      });
+
+    userInput.value = "";
+  });
+
+  clearHistoryButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    searchHistory = [];
+    localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+
+    renderHistory();
+    removeDisplay();
+  });
+
+  renderHistory();
+}
+
+function fetchWeather(latitude, longitude, cityName) {
   fetch(
     "http://api.openweathermap.org/data/2.5/forecast?units=metric&lat=" +
       latitude +
@@ -51,13 +76,13 @@ function fetchWeather(latitude, longitude) {
       return response.json();
     })
     .then(function (data) {
-      renderDisplay(data);
       removeDisplay();
+      renderDisplay(data, cityName);
       console.log(data);
     });
 }
 
-function renderDisplay(weatherInfo) {
+function renderDisplay(weatherInfo, cityName) {
   let tempSum = 0;
   let windSum = 0;
   let humiditySum = 0;
@@ -69,6 +94,11 @@ function renderDisplay(weatherInfo) {
   let temp = document.createElement("p");
   let wind = document.createElement("p");
   let humidity = document.createElement("p");
+
+  city.setAttribute("class", "city");
+  temp.setAttribute("class", "temp");
+  wind.setAttribute("class", "wind");
+  humidity.setAttribute("class", "humidity");
 
   for (let i = 0; i < weatherInfo.list.length; i = i + 8) {
     for (let x = 0; x < 8; x++) {
@@ -86,7 +116,12 @@ function renderDisplay(weatherInfo) {
     humiditySum = 0;
   }
 
-  city.textContent = weatherInfo.city.name + " " + weatherInfo.list[0].dt_txt;
+  city.textContent =
+    cityName +
+    ", " +
+    moment(weatherInfo.list[0].dt_txt, "YYYY-MM-DD HH:mm:ss").format(
+      "ddd, YYYY-MM-DD"
+    );
   temp.textContent = "Temperature: " + tempAverage[0];
   wind.textContent = "Wind speed: " + windAverage[0];
   humidity.textContent = "Humidity: " + humidityAverage[0];
@@ -103,7 +138,15 @@ function renderDisplay(weatherInfo) {
     let temp = document.createElement("p");
     let wind = document.createElement("p");
     let humidity = document.createElement("p");
-    city.textContent = weatherInfo.list[index].dt_txt;
+    city.setAttribute("class", "city");
+    temp.setAttribute("class", "temp");
+    wind.setAttribute("class", "wind");
+    humidity.setAttribute("class", "humidity");
+
+    city.textContent = moment(
+      weatherInfo.list[0].dt_txt,
+      "YYYY-MM-DD HH:mm:ss"
+    ).format("ddd, YYYY-MM-DD");
     temp.textContent = "Temperature: " + tempAverage[index];
     wind.textContent = "Wind speed: " + windAverage[index];
     humidity.textContent = "Humidity: " + humidityAverage[index];
@@ -119,9 +162,78 @@ function renderDisplay(weatherInfo) {
   tempAverage = [];
   windAverage = [];
   humidityAverage = [];
-
-  console.log(tempAverage);
-  console.log(tempSum);
 }
 
-function removeDisplay() {}
+function removeDisplay() {
+  const cityDisplay = document.querySelectorAll(".city");
+  const tempDisplay = document.querySelectorAll(".temp");
+  const windDisplay = document.querySelectorAll(".wind");
+  const humidityDisplay = document.querySelectorAll(".humidity");
+  const cardDisplay = document.querySelectorAll(".card");
+
+  for (let i = 0; i < cityDisplay.length; i++) {
+    cityDisplay[i].remove();
+    tempDisplay[i].remove();
+    windDisplay[i].remove();
+    humidityDisplay[i].remove();
+  }
+
+  for (let i = 0; i < cardDisplay.length; i++) {
+    cardDisplay[i].remove();
+  }
+}
+
+function addSearchToHistory(cityName) {
+  searchHistory.push(cityName);
+  localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+  renderHistory();
+}
+
+function renderHistory() {
+  const listItemArray = document.querySelectorAll(".history-item");
+  const historyButtonArray = document.querySelectorAll(".history-button");
+
+  if ((listItemArray !== null) & (historyButtonArray !== null)) {
+    for (let i = 0; i < listItemArray.length; i++) {
+      listItemArray[i].remove();
+      historyButtonArray[i].remove();
+    }
+  }
+
+  for (let i = 0; i < searchHistory.length; i++) {
+    const listItem = document.createElement("li");
+    const historyButton = document.createElement("button");
+
+    listItem.setAttribute("class", "history-item");
+    historyButton.setAttribute("class", "history-button");
+
+    historyButton.textContent = searchHistory[i];
+
+    searchHistoryList.appendChild(listItem);
+    listItem.appendChild(historyButton);
+
+    historyButton.addEventListener("click", function (event) {
+      event.preventDefault();
+      let cityName = historyButton.textContent;
+      let convertNameToCoordinatesURL =
+        "http://api.openweathermap.org/geo/1.0/direct?q=" +
+        cityName +
+        "&appid=1ff8e1adf1658293d1d256155fe06eec";
+
+      let latitude;
+      let longitude;
+
+      fetch(convertNameToCoordinatesURL)
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          latitude = data[0].lat.toFixed(2).toString();
+          longitude = data[0].lon.toFixed(2).toString();
+          fetchWeather(latitude, longitude, cityName);
+        });
+    });
+  }
+}
+
+init();
