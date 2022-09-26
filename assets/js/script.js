@@ -1,6 +1,6 @@
 // api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}  5 days / 3 hours
 
-// api.openweathermap.org/data/2.5/forecast/daily?lat={lat}&lon={lon}&cnt={cnt}&appid={API key} 16 days daily
+// https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API key} current day weather
 
 //http://api.openweathermap.org/geo/1.0/direct?q={city name},{state code},{country code}&limit={limit}&appid={API key}
 // convert city names to geo coordinates
@@ -19,24 +19,29 @@ const searchHistoryList = document.querySelector(".history-list");
 let searchHistory = [];
 
 function init() {
+  // if local storage isnt empty, load data into searchHistory array
   if (localStorage.getItem("searchHistory") !== null) {
     searchHistory = JSON.parse(localStorage.getItem("searchHistory"));
   } else {
     searchHistory = [];
   }
 
+  // add event listener to the search button
   searchButton.addEventListener("click", function (event) {
     event.preventDefault();
-    let str = userInput.value.trim("");
-    let cityName = str.charAt(0).toUpperCase() + str.slice(1);
+    let str = userInput.value.trim(""); // takes away unwanted space
+    let cityName = str.charAt(0).toUpperCase() + str.slice(1); // capitalize the 1st letter
     let convertNameToCoordinatesURL =
       "http://api.openweathermap.org/geo/1.0/direct?q=" +
       cityName +
-      "&appid=1ff8e1adf1658293d1d256155fe06eec";
+      "&appid=1ff8e1adf1658293d1d256155fe06eec"; // calling the geocoding API to convert city names in to global coordinates
 
     let latitude;
     let longitude;
 
+    removeDisplay(); // remove all rendered HTML elements
+
+    // This will return the latitude & longitude of the target city
     fetch(convertNameToCoordinatesURL)
       .then(function (response) {
         return response.json();
@@ -44,26 +49,47 @@ function init() {
       .then(function (data) {
         latitude = data[0].lat.toFixed(2).toString();
         longitude = data[0].lon.toFixed(2).toString();
-        addSearchToHistory(cityName);
-        fetchWeather(latitude, longitude, cityName);
+        addSearchToHistory(cityName); // add to search history
+        fetchWeatherCurrent(latitude, longitude, cityName); // fetch weather info for today
       });
 
     userInput.value = "";
   });
 
+  // add event listener to the clear history button
   clearHistoryButton.addEventListener("click", function (event) {
     event.preventDefault();
     searchHistory = [];
     localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
 
-    renderHistory();
-    removeDisplay();
+    renderHistory(); // clear history list
+    removeDisplay(); // remove rendered HTML elements
   });
 
-  renderHistory();
+  renderHistory(); // render search history when page loads
 }
 
-function fetchWeather(latitude, longitude, cityName) {
+function fetchWeatherCurrent(latitude, longitude, cityName) {
+  // getting data for just today
+  fetch(
+    "https://api.openweathermap.org/data/2.5/weather?units=metric&lat=" +
+      latitude +
+      "&lon=" +
+      longitude +
+      "&appid=" +
+      apiKey
+  )
+    .then(function (response) {
+      return response.json();
+    })
+    .then(function (data) {
+      removeDisplay(); // remove old display before re-rendering
+      renderDisplayCurrent(data); // render UI elements with data
+      fetchWeather5Days(latitude, longitude, cityName); // proceeds to get 5 day weather info
+    });
+}
+
+function fetchWeather5Days(latitude, longitude, cityName) {
   fetch(
     "http://api.openweathermap.org/data/2.5/forecast?units=metric&lat=" +
       latitude +
@@ -76,30 +102,46 @@ function fetchWeather(latitude, longitude, cityName) {
       return response.json();
     })
     .then(function (data) {
-      removeDisplay();
-      renderDisplay(data, cityName);
-      console.log(data);
+      renderDisplay5Days(data); // renders weather info for next 5 days
     });
 }
 
-function renderDisplay(weatherInfo, cityName) {
+function renderDisplayCurrent(weatherInfo, cityName) {
+  let city = document.createElement("h2");
+  let temp = document.createElement("p");
+  let wind = document.createElement("p");
+  let humidity = document.createElement("p");
+  city.setAttribute("class", "city");
+  temp.setAttribute("class", "temp");
+  wind.setAttribute("class", "wind");
+  humidity.setAttribute("class", "humidity");
+
+  city.textContent =
+    weatherInfo.name + ", " + moment().format("ddd, YYYY-MM-DD"); // use moment.js to format the date
+  temp.textContent = "Temperature: " + weatherInfo.main.temp.toFixed(0) + "°C";
+  wind.textContent =
+    "Wind speed: " + weatherInfo.wind.speed.toFixed(0) + " MPH";
+  humidity.textContent =
+    "Humidity: " + weatherInfo.main.humidity.toFixed(0) + " %";
+
+  todaysWeather.style.border = "1px var(--color-button) solid";
+  todaysWeather.appendChild(city);
+  todaysWeather.appendChild(temp);
+  todaysWeather.appendChild(wind);
+  todaysWeather.appendChild(humidity);
+}
+
+function renderDisplay5Days(weatherInfo) {
   let tempSum = 0;
   let windSum = 0;
   let humiditySum = 0;
   let tempAverage = [];
   let windAverage = [];
   let humidityAverage = [];
+  let dateArray = [];
 
-  let city = document.createElement("h2");
-  let temp = document.createElement("p");
-  let wind = document.createElement("p");
-  let humidity = document.createElement("p");
-
-  city.setAttribute("class", "city");
-  temp.setAttribute("class", "temp");
-  wind.setAttribute("class", "wind");
-  humidity.setAttribute("class", "humidity");
-
+  // use a for loop to get the average data for each of the 5 days
+  // the data we get back from the API has an interval of 3 hours
   for (let i = 0; i < weatherInfo.list.length; i = i + 8) {
     for (let x = 0; x < 8; x++) {
       tempSum += weatherInfo.list[x + i].main.temp;
@@ -110,30 +152,17 @@ function renderDisplay(weatherInfo, cityName) {
     tempAverage.push((tempSum / 8).toFixed(0));
     windAverage.push((windSum / 8).toFixed(0));
     humidityAverage.push((humiditySum / 8).toFixed(0));
+    dateArray.push(weatherInfo.list[i].dt_txt);
 
     tempSum = 0;
     windSum = 0;
     humiditySum = 0;
   }
 
-  city.textContent =
-    cityName +
-    ", " +
-    moment(weatherInfo.list[0].dt_txt, "YYYY-MM-DD HH:mm:ss").format(
-      "ddd, YYYY-MM-DD"
-    );
-  temp.textContent = "Temperature: " + tempAverage[0];
-  wind.textContent = "Wind speed: " + windAverage[0];
-  humidity.textContent = "Humidity: " + humidityAverage[0];
-  todaysWeather.appendChild(city);
-  todaysWeather.appendChild(temp);
-  todaysWeather.appendChild(wind);
-  todaysWeather.appendChild(humidity);
-
   const futureWeatherList = document.createElement("div");
   futureWeatherList.setAttribute("class", "card");
 
-  for (let index = 1; index < tempAverage.length; index++) {
+  for (let index = 0; index < tempAverage.length; index++) {
     let city = document.createElement("h2");
     let temp = document.createElement("p");
     let wind = document.createElement("p");
@@ -143,13 +172,12 @@ function renderDisplay(weatherInfo, cityName) {
     wind.setAttribute("class", "wind");
     humidity.setAttribute("class", "humidity");
 
-    city.textContent = moment(
-      weatherInfo.list[0].dt_txt,
-      "YYYY-MM-DD HH:mm:ss"
-    ).format("ddd, YYYY-MM-DD");
-    temp.textContent = "Temperature: " + tempAverage[index];
-    wind.textContent = "Wind speed: " + windAverage[index];
-    humidity.textContent = "Humidity: " + humidityAverage[index];
+    city.textContent = moment(dateArray[index], "YYYY-MM-DD HH:mm:ss").format(
+      "ddd, YYYY-MM-DD"
+    );
+    temp.textContent = "Temperature: " + tempAverage[index] + "°C";
+    wind.textContent = "Wind speed: " + windAverage[index] + " MPH";
+    humidity.textContent = "Humidity: " + humidityAverage[index] + " %";
     const futureWeatherList = document.createElement("div");
     futureWeatherList.setAttribute("class", "card");
     futureWeather.appendChild(futureWeatherList);
@@ -159,6 +187,7 @@ function renderDisplay(weatherInfo, cityName) {
     futureWeatherList.appendChild(humidity);
   }
 
+  // make sure to clear the arrays before doing the next fetch and render
   tempAverage = [];
   windAverage = [];
   humidityAverage = [];
@@ -181,6 +210,8 @@ function removeDisplay() {
   for (let i = 0; i < cardDisplay.length; i++) {
     cardDisplay[i].remove();
   }
+
+  todaysWeather.style.border = "none";
 }
 
 function addSearchToHistory(cityName) {
@@ -189,10 +220,12 @@ function addSearchToHistory(cityName) {
   renderHistory();
 }
 
+// adding history buttons to the list
 function renderHistory() {
   const listItemArray = document.querySelectorAll(".history-item");
   const historyButtonArray = document.querySelectorAll(".history-button");
 
+  // before updating the history, first clear the old ones to avoid redundancy
   if ((listItemArray !== null) & (historyButtonArray !== null)) {
     for (let i = 0; i < listItemArray.length; i++) {
       listItemArray[i].remove();
@@ -200,6 +233,7 @@ function renderHistory() {
     }
   }
 
+  // rendering
   for (let i = 0; i < searchHistory.length; i++) {
     const listItem = document.createElement("li");
     const historyButton = document.createElement("button");
@@ -212,6 +246,7 @@ function renderHistory() {
     searchHistoryList.appendChild(listItem);
     listItem.appendChild(historyButton);
 
+    // add event listener to each button so when clicked, weather info will be fetched
     historyButton.addEventListener("click", function (event) {
       event.preventDefault();
       let cityName = historyButton.textContent;
@@ -230,7 +265,7 @@ function renderHistory() {
         .then(function (data) {
           latitude = data[0].lat.toFixed(2).toString();
           longitude = data[0].lon.toFixed(2).toString();
-          fetchWeather(latitude, longitude, cityName);
+          fetchWeatherCurrent(latitude, longitude, cityName);
         });
     });
   }
