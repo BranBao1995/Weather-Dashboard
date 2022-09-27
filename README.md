@@ -26,3 +26,5 @@ Bootcamp module 6 challenge - making a weather dashboard webpage to display weat
 ## Links
 
 - Link to this project's Github repo: https://github.com/BranBao1995/Weather-Dashboard
+
+* Link to the project site: https://branbao1995.github.io/Weather-Dashboard/
