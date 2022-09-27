@@ -34,7 +34,7 @@ function init() {
     let str = userInput.value.trim(""); // takes away unwanted space
     let cityName = str.charAt(0).toUpperCase() + str.slice(1); // capitalize the 1st letter
     let convertNameToCoordinatesURL =
-      "http://api.openweathermap.org/geo/1.0/direct?q=" +
+      "https://api.openweathermap.org/geo/1.0/direct?q=" +
       cityName +
       "&appid=1ff8e1adf1658293d1d256155fe06eec"; // calling the geocoding API to convert city names in to global coordinates
 
@@ -111,7 +111,7 @@ function fetchWeatherCurrent(latitude, longitude, cityName) {
 
 function fetchWeather5Days(latitude, longitude, cityName) {
   fetch(
-    "http://api.openweathermap.org/data/2.5/forecast?units=metric&lat=" +
+    "https://api.openweathermap.org/data/2.5/forecast?units=metric&lat=" +
       latitude +
       "&lon=" +
       longitude +
@@ -140,7 +140,7 @@ function renderDisplayCurrent(weatherInfo) {
   let wind = document.createElement("p");
   let humidity = document.createElement("p");
   let iconURL =
-    "http://openweathermap.org/img/wn/" +
+    "https://openweathermap.org/img/wn/" +
     weatherInfo.weather[0].icon +
     "@2x.png";
   city.setAttribute("class", "city");
@@ -210,7 +210,7 @@ function renderDisplay5Days(weatherInfo) {
     let wind = document.createElement("p");
     let humidity = document.createElement("p");
     let iconURL =
-      "http://openweathermap.org/img/wn/" + iconCodeArray[index] + ".png";
+      "https://openweathermap.org/img/wn/" + iconCodeArray[index] + ".png";
     city.setAttribute("class", "city");
     temp.setAttribute("class", "temp");
     wind.setAttribute("class", "wind");
@@ -304,7 +304,7 @@ function renderHistory() {
       event.preventDefault();
       let cityName = historyButton.textContent;
       let convertNameToCoordinatesURL =
-        "http://api.openweathermap.org/geo/1.0/direct?q=" +
+        "https://api.openweathermap.org/geo/1.0/direct?q=" +
         cityName +
         "&appid=1ff8e1adf1658293d1d256155fe06eec";
 
