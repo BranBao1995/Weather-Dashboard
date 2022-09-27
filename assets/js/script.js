@@ -7,6 +7,8 @@
 
 // 1ff8e1adf1658293d1d256155fe06eec  My API key
 
+// http://openweathermap.org/img/wn/10d@2x.png  weather icon URL
+
 const apiKey = "1ff8e1adf1658293d1d256155fe06eec";
 
 const userInput = document.querySelector("#userInput");
@@ -44,13 +46,24 @@ function init() {
     // This will return the latitude & longitude of the target city
     fetch(convertNameToCoordinatesURL)
       .then(function (response) {
-        return response.json();
+        if (response.ok) {
+          response.json().then(function (data) {
+            if (data.length != 0) {
+              latitude = data[0].lat.toFixed(2).toString();
+              longitude = data[0].lon.toFixed(2).toString();
+
+              addSearchToHistory(cityName); // add to search history
+              fetchWeatherCurrent(latitude, longitude, cityName); // fetch weather info for today
+            } else {
+              alert("Invalid location");
+            }
+          });
+        } else {
+          alert("Error: " + response.statusText);
+        }
       })
-      .then(function (data) {
-        latitude = data[0].lat.toFixed(2).toString();
-        longitude = data[0].lon.toFixed(2).toString();
-        addSearchToHistory(cityName); // add to search history
-        fetchWeatherCurrent(latitude, longitude, cityName); // fetch weather info for today
+      .catch(function (error) {
+        alert("Unable to fetch coordinates");
       });
 
     userInput.value = "";
@@ -80,12 +93,19 @@ function fetchWeatherCurrent(latitude, longitude, cityName) {
       apiKey
   )
     .then(function (response) {
-      return response.json();
+      if (response.ok) {
+        response.json().then(function (data) {
+          removeDisplay(); // remove old display before re-rendering
+          renderDisplayCurrent(data); // render UI elements with data
+          fetchWeather5Days(latitude, longitude, cityName); // proceeds to get 5 day weather info
+          console.log(data);
+        });
+      } else {
+        alert("Error: " + response.statusText);
+      }
     })
-    .then(function (data) {
-      removeDisplay(); // remove old display before re-rendering
-      renderDisplayCurrent(data); // render UI elements with data
-      fetchWeather5Days(latitude, longitude, cityName); // proceeds to get 5 day weather info
+    .catch(function (error) {
+      alert("Invalid Geo Location!");
     });
 }
 
@@ -99,22 +119,37 @@ function fetchWeather5Days(latitude, longitude, cityName) {
       apiKey
   )
     .then(function (response) {
-      return response.json();
+      if (response.ok) {
+        response.json().then(function (data) {
+          renderDisplay5Days(data); // renders weather info for next 5 days
+          console.log(data);
+        });
+      } else {
+        alert("Error: " + response.statusText);
+      }
     })
-    .then(function (data) {
-      renderDisplay5Days(data); // renders weather info for next 5 days
+    .catch(function (error) {
+      alert("Invalid Geo Location!");
     });
 }
 
-function renderDisplayCurrent(weatherInfo, cityName) {
+function renderDisplayCurrent(weatherInfo) {
   let city = document.createElement("h2");
+  let icon = document.createElement("img");
   let temp = document.createElement("p");
   let wind = document.createElement("p");
   let humidity = document.createElement("p");
+  let iconURL =
+    "http://openweathermap.org/img/wn/" +
+    weatherInfo.weather[0].icon +
+    "@2x.png";
   city.setAttribute("class", "city");
   temp.setAttribute("class", "temp");
   wind.setAttribute("class", "wind");
   humidity.setAttribute("class", "humidity");
+  icon.setAttribute("class", "icon");
+  icon.setAttribute("alt", "weather icon");
+  icon.setAttribute("src", iconURL);
 
   city.textContent =
     weatherInfo.name + ", " + moment().format("ddd, YYYY-MM-DD"); // use moment.js to format the date
@@ -126,6 +161,7 @@ function renderDisplayCurrent(weatherInfo, cityName) {
 
   todaysWeather.style.border = "1px var(--color-button) solid";
   todaysWeather.appendChild(city);
+  todaysWeather.appendChild(icon);
   todaysWeather.appendChild(temp);
   todaysWeather.appendChild(wind);
   todaysWeather.appendChild(humidity);
@@ -135,10 +171,12 @@ function renderDisplay5Days(weatherInfo) {
   let tempSum = 0;
   let windSum = 0;
   let humiditySum = 0;
+  let iconCode;
   let tempAverage = [];
   let windAverage = [];
   let humidityAverage = [];
   let dateArray = [];
+  let iconCodeArray = [];
 
   // use a for loop to get the average data for each of the 5 days
   // the data we get back from the API has an interval of 3 hours
@@ -149,10 +187,13 @@ function renderDisplay5Days(weatherInfo) {
       humiditySum += weatherInfo.list[x + i].main.humidity;
     }
 
+    iconCode = weatherInfo.list[i + 5].weather[0].icon; // use afternoon data for weather icon
+
     tempAverage.push((tempSum / 8).toFixed(0));
     windAverage.push((windSum / 8).toFixed(0));
     humidityAverage.push((humiditySum / 8).toFixed(0));
     dateArray.push(weatherInfo.list[i].dt_txt);
+    iconCodeArray.push(iconCode);
 
     tempSum = 0;
     windSum = 0;
@@ -164,13 +205,19 @@ function renderDisplay5Days(weatherInfo) {
 
   for (let index = 0; index < tempAverage.length; index++) {
     let city = document.createElement("h2");
+    let icon = document.createElement("img");
     let temp = document.createElement("p");
     let wind = document.createElement("p");
     let humidity = document.createElement("p");
+    let iconURL =
+      "http://openweathermap.org/img/wn/" + iconCodeArray[index] + ".png";
     city.setAttribute("class", "city");
     temp.setAttribute("class", "temp");
     wind.setAttribute("class", "wind");
     humidity.setAttribute("class", "humidity");
+    icon.setAttribute("class", "icon");
+    icon.setAttribute("alt", "weather icon");
+    icon.setAttribute("src", iconURL);
 
     city.textContent = moment(dateArray[index], "YYYY-MM-DD HH:mm:ss").format(
       "ddd, YYYY-MM-DD"
@@ -182,6 +229,7 @@ function renderDisplay5Days(weatherInfo) {
     futureWeatherList.setAttribute("class", "card");
     futureWeather.appendChild(futureWeatherList);
     futureWeatherList.appendChild(city);
+    futureWeatherList.appendChild(icon);
     futureWeatherList.appendChild(temp);
     futureWeatherList.appendChild(wind);
     futureWeatherList.appendChild(humidity);
@@ -199,6 +247,7 @@ function removeDisplay() {
   const windDisplay = document.querySelectorAll(".wind");
   const humidityDisplay = document.querySelectorAll(".humidity");
   const cardDisplay = document.querySelectorAll(".card");
+  const iconDisplay = document.querySelectorAll(".icon");
 
   for (let i = 0; i < cityDisplay.length; i++) {
     cityDisplay[i].remove();
@@ -209,6 +258,10 @@ function removeDisplay() {
 
   for (let i = 0; i < cardDisplay.length; i++) {
     cardDisplay[i].remove();
+  }
+
+  for (let i = 0; i < iconDisplay.length; i++) {
+    iconDisplay[i].remove();
   }
 
   todaysWeather.style.border = "none";
